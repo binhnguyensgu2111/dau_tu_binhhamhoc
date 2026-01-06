@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Strategy Pro 2026 - Interactive Dashboard</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Prop-Types & Recharts -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Arial', system-ui, -apple-system, sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .pro-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const RechartsObj = window.Recharts || {};
+        const { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, ComposedChart, Line } = RechartsObj;
+        
+        const hasCharts = !!(BarChart && Bar && XAxis && YAxis && Tooltip && ResponsiveContainer);
+
+        // --- ICONS ---
+        const Icons = {
+            TrendingUp: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+            PieChart: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>,
+            Briefcase: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
+            FileText: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>,
+            Target: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+            Zap: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            X: ({size=24, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+            Menu: ({size=24, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
+            BarChart2: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>,
+            Layers: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
+            Search: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+            Edit3: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
+            Trash2: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
+            Plus: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+            AlertTriangle: ({size=20, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        };
+
+        const { TrendingUp, PieChart, Briefcase, FileText, Target, Zap, X, Menu, BarChart2, Layers, Search, Edit3, Trash2, Plus, AlertTriangle } = Icons;
+
+        // --- DATA: BROKERS & DETAILED CONTENT (UPDATED 2026 STRATEGY) ---
+        const STRATEGY_DATA = {
+            "VDSC": { 
+                name: "Rồng Việt (VDS)", 
+                color: "#00918e", 
+                theme: "Vận tốc 11,2 km/s - Bứt phá lực hấp dẫn", 
+                targetIndex: "1.712 - 2.032",
+                content: `
+                    <div class="bg-teal-50 border-l-4 border-teal-500 p-4 mb-4">
+                        <p class="font-bold text-teal-800">Thông điệp 2026: "11,2 km/s - Vận tốc vũ trụ cấp 2"</p>
+                        <p class="text-sm text-teal-700">Đây là vận tốc tối thiểu để một vật thể thoát khỏi lực hấp dẫn trái đất. VDSC kỳ vọng 2026 là năm Việt Nam tích lũy đủ nội lực để bứt phá khỏi vùng tích lũy dài hạn, chuyển sang quỹ đạo tăng trưởng mới.</p>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">1. Vĩ mô: Kỷ nguyên của dòng tiền "Kiến tạo"</h3>
+                    <p class="mb-4 text-justify">Động lực tăng trưởng 2026 không chỉ đến từ sự phục hồi chu kỳ mà còn từ sự chuyển dịch cấu trúc dòng tiền:</p>
+                    <ul class="list-disc pl-5 mb-4 space-y-2 text-justify text-gray-700">
+                        <li><strong>Lãi suất thực dương giảm:</strong> Khi lạm phát ổn định và NHNN duy trì chính sách tiền tệ hỗ trợ, dòng tiền khổng lồ từ kênh tiết kiệm dân cư sẽ tìm kiếm các kênh sinh lời cao hơn, với TTCK là điểm đến hấp dẫn nhất khi P/B đang ở vùng thấp lịch sử.</li>
+                        <li><strong>Sản xuất & Xuất khẩu:</strong> Chỉ số IIP và PMI duy trì trên 50 điểm trong thời gian dài. Các thị trường truyền thống (Mỹ, EU) phục hồi nhu cầu giúp các ngành thâm dụng lao động (Dệt may, Thủy sản) và Công nghiệp chế biến chế tạo (Thép, Hóa chất) tăng tốc.</li>
+                    </ul>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">2. Chiến lược: Đọc đúng chu kỳ - Chọn đúng độ rộng</h3>
+                    <p class="mb-4 text-justify">VDSC khuyến nghị chiến lược "Tích sản" trong nửa đầu năm và "Tăng tốc" trong nửa cuối năm. Trọng tâm danh mục:</p>
+                    <ul class="list-disc pl-5 mb-4 space-y-2 text-justify text-gray-700">
+                        <li><strong>Nhóm Phòng thủ & Cổ tức:</strong> Doanh nghiệp có dòng tiền mạnh, trả cổ tức tiền mặt cao (Phân bón, KCN, Dược phẩm) để tạo đệm an toàn.</li>
+                        <li><strong>Nhóm Tăng trưởng (Beta cao):</strong> Chứng khoán và Ngân hàng sẽ là hai nhóm dẫn dắt chỉ số khi thanh khoản bùng nổ nhờ câu chuyện nâng hạng thị trường.</li>
+                    </ul>
+                `
+            },
+            "SSI": { 
+                name: "SSI Research", 
+                color: "#d71920", 
+                theme: "Khởi đầu của khát vọng - Kỷ nguyên Nâng hạng", 
+                targetIndex: "1.800 (Kịch bản cơ sở)",
+                content: `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                        <p class="font-bold text-red-800">Tâm điểm 2026: Nâng hạng & Định giá lại (Re-rating)</p>
+                        <p class="text-sm text-red-700">Thị trường không còn trong chế độ phục hồi, mà đang "bứt phá sau nâng hạng". Hệ số P/E mục tiêu hướng tới vùng 16x-17x.</p>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">1. Thể chế & Dòng vốn: Cú hích từ FTSE</h3>
+                    <p class="mb-4 text-justify">SSI Research nhấn mạnh 2026 là năm bản lề cho việc Việt Nam chính thức được FTSE nâng hạng lên Thị trường Mới nổi (Emerging Market). Hai nút thắt lớn nhất đã được tháo gỡ:</p>
+                    <ul class="list-disc pl-5 mb-4 space-y-2 text-justify text-gray-700">
+                        <li><strong>Pre-funding (Ký quỹ trước giao dịch):</strong> Việc cho phép NĐT tổ chức nước ngoài mua chứng khoán không cần ký quỹ 100% tiền mặt là bước đột phá về thanh khoản.</li>
+                        <li><strong>Minh bạch thông tin:</strong> Yêu cầu công bố thông tin bằng tiếng Anh áp dụng rộng rãi cho các doanh nghiệp niêm yết quy mô lớn.</li>
+                    </ul>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">2. Triển vọng Lợi nhuận: Tăng trưởng 2 con số</h3>
+                    <p class="mb-4 text-justify">Lợi nhuận các doanh nghiệp niêm yết dự kiến tăng trưởng <strong>18-20%</strong> trong năm 2026, được dẫn dắt bởi:</p>
+                    <ul class="list-disc pl-5 mb-4 space-y-2 text-justify text-gray-700">
+                        <li><strong>Bán lẻ & Tiêu dùng:</strong> Phục hồi mạnh mẽ nhờ thu nhập khả dụng tăng và các chính sách giảm thuế (VAT 2%).</li>
+                        <li><strong>Thép & Vật liệu xây dựng:</strong> Hưởng lợi kép từ sự ấm lên của BĐS nội địa và giá thép thế giới phục hồi.</li>
+                    </ul>
+                `
+            },
+            "VIETCAP": { 
+                 name: "Vietcap", 
+                 color: "#222222", 
+                 theme: "Nội lực thúc đẩy - EPS bùng nổ", 
+                 targetIndex: "1.737 - 2.033",
+                 content: `
+                    <div class="bg-gray-100 border-l-4 border-gray-800 p-4 mb-4">
+                        <p class="font-bold text-gray-800">Dự báo táo bạo: GDP 2026 đạt 8.5%</p>
+                        <p class="text-sm text-gray-600">Vietcap đưa ra kịch bản tăng trưởng kinh tế lạc quan nhất thị trường, dựa trên niềm tin vào các cải cách thể chế mang tính bước ngoặt.</p>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">1. Động lực EPS: Mức cao nhất 5 năm</h3>
+                    <p class="mb-4 text-justify">Tăng trưởng Lợi nhuận trên mỗi cổ phiếu (EPS) của VN-Index dự báo đạt <strong>20-25%</strong> trong năm 2026. Đây là mức tăng trưởng cao nhất trong chu kỳ 5 năm gần đây, giúp định giá P/E Forward trở nên cực kỳ hấp dẫn (về dưới 12x).</p>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">2. Cải cách Thể chế & Tinh gọn bộ máy</h3>
+                    <p class="mb-4 text-justify">Các nỗ lực tinh gọn bộ máy Chính phủ và hệ thống hành chính địa phương sẽ giúp giảm chi phí tuân thủ, rút ngắn thời gian phê duyệt dự án, đặc biệt là các dự án Bất động sản và Năng lượng.</p>
+                    
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">3. Ngành tiêu điểm</h3>
+                    <ul class="list-disc pl-5 mb-4 space-y-2 text-justify text-gray-700">
+                        <li><strong>Ngân hàng:</strong> Tín dụng tăng trưởng 15% ngay từ đầu năm, tập trung vào lĩnh vực sản xuất ưu tiên.</li>
+                        <li><strong>BĐS Khu công nghiệp:</strong> Dòng vốn FDI thực hiện tiếp tục lập đỉnh mới nhờ vị thế địa chính trị ổn định của Việt Nam.</li>
+                    </ul>
+                 `
+            },
+            "KBSV": { 
+                name: "KBSV", 
+                color: "#f3c500", 
+                theme: "Vững bước vượt sóng - Hướng tới 2040", 
+                targetIndex: "2.040",
+                content: `
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
+                        <p class="font-bold text-yellow-800">Kế hoạch 5 năm (2026-2030): Khởi đầu đột phá</p>
+                        <p class="text-sm text-yellow-700">2026 là năm đầu tiên của nhiệm kỳ mới và kế hoạch 5 năm mới, thường đi kèm với quyết tâm chính trị cao độ để đạt mục tiêu tăng trưởng GDP >7%.</p>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">1. Bối cảnh Quốc tế: Lợi thế China+1</h3>
+                    <p class="mb-4 text-justify">Việt Nam tiếp tục là điểm đến hàng đầu của làn sóng dịch chuyển chuỗi cung ứng (China+1). Sự ổn định vĩ mô và các hiệp định thương mại tự do (FTA) thế hệ mới giúp Việt Nam thu hút dòng vốn FDI chất lượng cao vào các lĩnh vực công nghệ cao và bán dẫn.</p>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">2. Chính sách hỗ trợ toàn diện</h3>
+                    <ul class="list-disc pl-5 mb-4 space-y-2 text-justify text-gray-700">
+                        <li><strong>Tài khóa:</strong> Đầu tư công tiếp tục là động lực dẫn dắt với các siêu dự án (Sân bay Long Thành, Cao tốc Bắc Nam giai đoạn 2).</li>
+                        <li><strong>Tiền tệ:</strong> Duy trì mặt bằng lãi suất thấp để hỗ trợ doanh nghiệp phục hồi, chấp nhận áp lực tỷ giá trong ngắn hạn.</li>
+                    </ul>
+                `
+            },
+            "ABS": { 
+                 name: "ABS Research", 
+                 color: "#00a9e0", 
+                 theme: "Đầu tư công & Sóng hạ tầng", 
+                 targetIndex: "1.940 - 2.040",
+                 content: `
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">1. Chiến lược: Theo dấu dòng tiền Chính phủ</h3>
+                    <p class="mb-4 text-justify">ABS Research đặt cược lớn vào nhóm <strong>Đầu tư công</strong>. Năm 2026 là giai đoạn "nước rút" giải ngân cho các dự án trọng điểm quốc gia. Khối lượng công việc khổng lồ sẽ đổ về các doanh nghiệp xây lắp hạ tầng (<span class="font-bold">HHV, VCG, LCG</span>) và vật liệu xây dựng (<span class="font-bold">HPG, KSB</span>).</p>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">2. Chính sách An sinh & Tiêu dùng</h3>
+                    <p class="mb-4 text-justify">Các chính sách cải cách tiền lương khu vực công và giảm thuế thu nhập cá nhân/VAT sẽ trực tiếp gia tăng thu nhập khả dụng của người dân. Đây là động lực lớn cho sự hồi phục của ngành Bán lẻ và Hàng tiêu dùng thiết yếu.</p>
+                 `
+            },
+            "MBS": { 
+                name: "MBS Research", 
+                color: "#0055ba", 
+                theme: "Tăng trưởng chọn lọc & Chất lượng tài sản", 
+                targetIndex: "1.450 - 1.500",
+                content: `
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">1. Quan điểm Thận trọng: Sàng lọc khắc nghiệt</h3>
+                    <p class="mb-4 text-justify">Khác với sự lạc quan của các bên khác, MBS cho rằng thị trường 2026 sẽ phân hóa mạnh. Dòng tiền thông minh sẽ chỉ tìm đến các doanh nghiệp có:</p>
+                    <ul class="list-disc pl-5 mb-4 space-y-2 text-justify text-gray-700">
+                        <li>Hoạt động kinh doanh cốt lõi (Core Business) tăng trưởng thực chất.</li>
+                        <li>Sức khỏe tài chính lành mạnh, tỷ lệ đòn bẩy thấp.</li>
+                        <li>Quản trị minh bạch (ESG).</li>
+                    </ul>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">2. Cơ hội trong rủi ro</h3>
+                    <p class="mb-4 text-justify">Cơ hội nằm ở các nhóm ngành phòng thủ và hưởng lợi từ chính sách vĩ mô dài hạn:</p>
+                    <ul class="list-disc pl-5 mb-4 space-y-2 text-justify text-gray-700">
+                        <li><strong>Dầu khí:</strong> Chuỗi dự án Lô B - Ô Môn mang lại việc làm cho PVD, PVS trong nhiều năm.</li>
+                        <li><strong>Công nghệ:</strong> Xuất khẩu phần mềm và làm chủ công nghệ bán dẫn (FPT).</li>
+                    </ul>
+                `
+            },
+            "SHINHAN": {
+                name: "Shinhan Securities",
+                color: "#2563eb",
+                theme: "Chuyển mình mạnh mẽ - Mục tiêu GDP >10%",
+                targetIndex: "Tích cực",
+                content: `
+                    <div class="bg-blue-50 border-l-4 border-blue-600 p-4 mb-4">
+                        <p class="font-bold text-blue-800">Kỳ vọng Tăng trưởng đột phá</p>
+                        <p class="text-sm text-blue-700">Shinhan dẫn lại mục tiêu của Quốc hội về tăng trưởng GDP 2026 từ 10% trở lên, thể hiện quyết tâm chính trị rất lớn.</p>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">1. Bốn trụ cột thu hút dòng tiền</h3>
+                    <ul class="list-disc pl-5 mb-4 space-y-2 text-justify text-gray-700">
+                        <li><strong>Ngân hàng & Dịch vụ Tài chính:</strong> Hưởng lợi từ sự phát triển của thị trường vốn và nhu cầu tín dụng.</li>
+                        <li><strong>FDI & Đầu tư công:</strong> Nhóm ngành xây dựng, KCN và vật liệu xây dựng.</li>
+                        <li><strong>Bán lẻ:</strong> Sự phục hồi của sức cầu nội địa.</li>
+                        <li><strong>Công nghệ & Chuyển đổi số:</strong> Xu hướng tất yếu của nền kinh tế hiện đại.</li>
+                    </ul>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">2. Chỉ báo vĩ mô</h3>
+                    <p class="mb-4 text-justify">Lạm phát duy trì quanh mức 3.6% (dưới mục tiêu 4.5%). Tỷ giá có thể tăng nhẹ 3% nhưng trong tầm kiểm soát.</p>
+                `
+            },
+            "MAS": {
+                name: "Mirae Asset (MAS)",
+                color: "#005788", 
+                theme: "Chuyển dịch động lực & Chuẩn hóa",
+                targetIndex: "Khả quan", 
+                content: `
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">1. Điểm nhấn Chiến lược: Chuyển dịch cấu trúc</h3>
+                    <p class="mb-4 text-justify">MAS nhận định 2026 là năm bản lề khi động lực tăng trưởng kinh tế chuyển dịch từ khu vực Xuất khẩu sang <strong>Đầu tư công</strong> và <strong>Tiêu dùng nội địa</strong>. Đây là sự thay đổi mang tính cấu trúc giúp nền kinh tế giảm phụ thuộc vào biến động bên ngoài.</p>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">2. Nâng tầm Chất lượng Thị trường (Quality Upgrade)</h3>
+                    <ul class="list-disc pl-5 mb-4 space-y-2 text-justify text-gray-700">
+                        <li><strong>Áp dụng IFRS:</strong> Khuyến khích áp dụng chuẩn mực IFRS và quản trị OECD để thu hút dòng vốn ngoại (FII) chất lượng cao.</li>
+                        <li><strong>Chuyển đổi trạng thái:</strong> TTCK Việt Nam đang chuyển mình từ một thị trường cận biên biến động mạnh sang một cấu trúc bền vững hơn.</li>
+                    </ul>
+                `
+            }
+        };
+
+        // --- DATA: SECTORS ---
+        const SECTOR_DATA = [
+            {
+                id: "BANK",
+                name: "Ngân hàng",
+                sentiment: "positive", // positive, neutral, negative
+                growth: "+18%",
+                desc: "Tăng trưởng tín dụng hồi phục, NIM ổn định, chất lượng tài sản được kiểm soát.",
+                content: `
+                    <h3 class="text-xl font-bold text-blue-800 mb-3">Triển vọng Ngành Ngân hàng 2026: Vị thế Vua trở lại</h3>
+                    <p class="mb-4 text-justify font-bold">Đánh giá: KHẢ QUAN</p>
+                    <p class="mb-4 text-justify">Ngành ngân hàng được dự báo sẽ tiếp tục giữ vai trò dẫn dắt thị trường trong năm 2026 với lợi nhuận sau thuế toàn ngành dự kiến tăng trưởng 18-20%.</p>
+                    
+                    <h4 class="text-lg font-bold text-gray-800 mb-2">Luận điểm đầu tư chính:</h4>
+                    <ul class="list-disc pl-5 space-y-2 mb-4 text-justify text-gray-700">
+                        <li><strong>Tăng trưởng tín dụng:</strong> Mục tiêu 15% là khả thi trong bối cảnh kinh tế phục hồi và nhu cầu vốn cho sản xuất, BĐS tăng trở lại.</li>
+                        <li><strong>NIM (Biên lãi ròng):</strong> Duy trì ổn định hoặc tăng nhẹ nhờ chi phí vốn (COF) thấp (lãi suất huy động tăng chậm hơn cho vay) và tỷ lệ CASA cải thiện.</li>
+                        <li><strong>Chất lượng tài sản:</strong> Tỷ lệ nợ xấu (NPL) được kỳ vọng đã tạo đỉnh trong 2024-2025. Áp lực trích lập dự phòng giảm bớt sẽ giúp lợi nhuận bứt phá (câu chuyện của CTG, MBB).</li>
+                        <li><strong>Câu chuyện riêng:</strong> Các thương vụ bán vốn ngoại (VCB, BID), chia cổ tức bằng tiền mặt và tăng vốn điều lệ tiếp tục là chất xúc tác.</li>
+                    </ul>
+                    <p class="mb-4 text-justify font-bold text-gray-800">Cổ phiếu ưa thích: VCB, CTG, MBB, ACB, STB.</p>
+                `
+            },
+            {
+                id: "TECH",
+                name: "Công nghệ",
+                sentiment: "positive",
+                growth: "+25%",
+                desc: "Xu hướng AI, Chip bán dẫn và Chuyển đổi số toàn cầu.",
+                content: `
+                    <h3 class="text-xl font-bold text-blue-800 mb-3">Triển vọng Ngành Công nghệ: Kỷ nguyên AI & Bán dẫn</h3>
+                    <p class="mb-4 text-justify font-bold">Đánh giá: KHẢ QUAN</p>
+                    <p class="mb-4 text-justify">Ngành công nghệ Việt Nam đang đứng trước cơ hội lịch sử để tham gia sâu hơn vào chuỗi giá trị toàn cầu. Tốc độ tăng trưởng lợi nhuận dự kiến duy trì ở mức 2 con số (>20%) trong nhiều năm tới.</p>
+                    
+                    <h4 class="text-lg font-bold text-gray-800 mb-2">Động lực tăng trưởng:</h4>
+                    <ul class="list-disc pl-5 space-y-2 mb-4 text-justify text-gray-700">
+                        <li><strong>Thị trường nước ngoài:</strong> Chi tiêu cho CNTT tại Mỹ, Nhật Bản, Châu Âu phục hồi mạnh. Xu hướng chuyển đổi số và nhu cầu AI tạo ra lượng đơn hàng khổng lồ cho các doanh nghiệp gia công phần mềm.</li>
+                        <li><strong>Make in Vietnam:</strong> Sự dịch chuyển của các ông lớn bán dẫn (NVIDIA, Amkor...) đến Việt Nam tạo cơ hội cho hệ sinh thái công nghệ trong nước.</li>
+                        <li><strong>Data Center:</strong> Luật Viễn thông mới và quy hoạch hạ tầng số thúc đẩy làn sóng đầu tư vào Trung tâm dữ liệu.</li>
+                    </ul>
+                     <p class="mb-4 text-justify font-bold text-gray-800">Cổ phiếu ưa thích: FPT, CMG, FOX.</p>
+                `
+            },
+            {
+                id: "STEEL",
+                name: "Thép",
+                sentiment: "positive",
+                growth: "+40%",
+                desc: "Phục hồi từ đáy lợi nhuận, sản lượng tăng nhờ BĐS ấm lên.",
+                content: `
+                    <h3 class="text-xl font-bold text-blue-800 mb-3">Triển vọng Ngành Thép: Chu kỳ tăng trưởng mới</h3>
+                    <p class="mb-4 text-justify font-bold">Đánh giá: KHẢ QUAN</p>
+                    <p class="mb-4 text-justify">Sau giai đoạn khó khăn nhất, ngành thép đang bước vào chu kỳ phục hồi lợi nhuận mạnh mẽ (dự báo tăng trưởng >40% từ nền thấp).</p>
+                    
+                    <h4 class="text-lg font-bold text-gray-800 mb-2">Yếu tố hỗ trợ:</h4>
+                    <ul class="list-disc pl-5 space-y-2 mb-4 text-justify text-gray-700">
+                        <li><strong>Giá thép phục hồi:</strong> Nhu cầu tiêu thụ thép thế giới và nội địa tăng trở lại, đặc biệt từ thị trường xây dựng và đầu tư công.</li>
+                        <li><strong>Chi phí đầu vào:</strong> Giá quặng sắt và than cốc ổn định giúp cải thiện biên lợi nhuận gộp.</li>
+                        <li><strong>Dự án lớn:</strong> Dung Quất 2 của HPG đi vào hoạt động sẽ thay đổi cục diện nguồn cung HRC trong nước, giảm phụ thuộc vào nhập khẩu.</li>
+                    </ul>
+                     <p class="mb-4 text-justify font-bold text-gray-800">Cổ phiếu ưa thích: HPG, HSG, NKG.</p>
+                `
+            },
+            {
+                id: "RETAIL",
+                name: "Bán lẻ",
+                sentiment: "neutral",
+                growth: "+15%",
+                desc: "Phục hồi theo sức mua nhưng áp lực cạnh tranh còn lớn.",
+                content: `
+                    <h3 class="text-xl font-bold text-yellow-700 mb-3">Triển vọng Ngành Bán lẻ: Hồi phục nhưng phân hóa</h3>
+                    <p class="mb-4 text-justify font-bold">Đánh giá: TRUNG LẬP</p>
+                    <p class="mb-4 text-justify">Sức mua của người tiêu dùng đang phục hồi nhưng chưa đồng đều. Nhóm hàng thiết yếu và công nghệ phục hồi tốt hơn nhóm hàng xa xỉ.</p>
+                    <h4 class="text-lg font-bold text-gray-800 mb-2">Tiêu điểm:</h4>
+                    <ul class="list-disc pl-5 space-y-2 mb-4 text-justify text-gray-700">
+                        <li><strong>Thuế VAT:</strong> Chính sách giảm thuế VAT 2% tiếp tục hỗ trợ kích cầu.</li>
+                        <li><strong>Cạnh tranh:</strong> Cuộc chiến giá đã hạ nhiệt nhưng sự cạnh tranh từ thương mại điện tử (TikTok Shop, Shopee) vẫn gay gắt.</li>
+                    </ul>
+                    <p class="mb-4 text-justify font-bold text-gray-800">Cổ phiếu ưa thích: MWG, PNJ, FRT.</p>
+                `
+            },
+             {
+                id: "REAL_ESTATE",
+                name: "Bất động sản",
+                sentiment: "neutral",
+                growth: "+10%",
+                desc: "Phân hóa mạnh, chỉ các DN sạch pháp lý mới có cơ hội.",
+                content: `
+                    <h3 class="text-xl font-bold text-yellow-700 mb-3">Triển vọng Bất động sản: Ánh sáng cuối đường hầm</h3>
+                    <p class="mb-4 text-justify font-bold">Đánh giá: TRUNG LẬP</p>
+                    <p class="mb-4 text-justify">Thị trường BĐS đã qua vùng đáy nhưng tốc độ hồi phục sẽ chậm và phân hóa mạnh. Luật Đất đai (sửa đổi) đi vào thực tiễn sẽ giúp tháo gỡ pháp lý nhưng cũng sàng lọc các chủ đầu tư yếu kém.</p>
+                    <h4 class="text-lg font-bold text-gray-800 mb-2">Xu hướng:</h4>
+                    <ul class="list-disc pl-5 space-y-2 mb-4 text-justify text-gray-700">
+                        <li><strong>Phân khúc:</strong> Nhà ở thực, nhà ở xã hội và BĐS KCN sẽ dẫn dắt thị trường. Phân khúc nghỉ dưỡng và đất nền tỉnh vẫn cần thêm thời gian.</li>
+                        <li><strong>Tài chính:</strong> Áp lực đáo hạn trái phiếu vẫn còn nhưng đã giảm bớt nhờ các giải pháp giãn hoãn nợ.</li>
+                    </ul>
+                    <p class="mb-4 text-justify font-bold text-gray-800">Cổ phiếu ưa thích: KDH, NLG, VHM, IDC (BĐS KCN).</p>
+                `
+            },
+             {
+                id: "OG",
+                name: "Dầu khí",
+                sentiment: "neutral",
+                growth: "+12%",
+                desc: "Phụ thuộc tiến độ Lô B - Ô Môn và giá dầu thế giới.",
+                content: `
+                    <h3 class="text-xl font-bold text-yellow-700 mb-3">Triển vọng Dầu khí: Chờ gió đông Lô B</h3>
+                    <p class="mb-4 text-justify font-bold">Đánh giá: TRUNG LẬP</p>
+                    <p class="mb-4 text-justify">Động lực chính của ngành đến từ siêu dự án Lô B - Ô Môn. Tuy nhiên, tiến độ triển khai thực tế thường chậm hơn kỳ vọng.</p>
+                    <p class="mb-4 text-justify font-bold text-gray-800">Cổ phiếu ưa thích: PVS, PVD, GAS.</p>
+                `
+            }
+        ];
+
+        // --- DATA: TOP 20 STOCKS (Expanded) ---
+        // Added 'consensus' field for Matrix
+        const TOP_20_STOCKS = [
+            { 
+                ticker: "HPG", name: "Hòa Phát", sector: "Thép", 
+                targets: { MBS: 35750, SSI: 32000, VND: 34000, VDSC: 33500, KBSV: 33400, SHS: 32500, VIETCAP: 33800, ABS: 34500, SHINHAN: 35000 }, 
+                current: 27800,
+                consensus: 5, // 1-5 Scale for Matrix Visual
+                story: `**1. Dung Quất 2 - "Game Changer" của ngành thép:**
+                Năm 2026 sẽ là năm bản lề khi dự án Khu liên hợp Gang thép Dung Quất 2 đi vào hoạt động giai đoạn 1 từ Q1/2025 và chạy full công suất vào 2026. Tổng công suất thiết kế 5.6 triệu tấn HRC/năm sẽ nâng tổng công suất HRC của HPG lên 8.6 triệu tấn, đưa Hòa Phát vào Top 30 doanh nghiệp thép lớn nhất thế giới.
+                
+                **2. Chu kỳ giá thép & Biên lợi nhuận:**
+                Sau giai đoạn tạo đáy 2023-2024, giá thép thế giới và nội địa đang bước vào chu kỳ phục hồi nhờ nhu cầu tái thiết từ các thị trường lớn và sự ấm lên của BĐS trong nước. Biên lợi nhuận gộp của HPG dự kiến cải thiện từ 11% (2024) lên 15-16% (2026) nhờ lợi thế quy mô và tự chủ nguyên liệu.
+                
+                **3. Bất động sản KCN & Container:**
+                Mảng kinh doanh ngoài thép (BĐS KCN tại Hưng Yên, Hà Nam và Nhà máy Container Vũng Tàu) bắt đầu đóng góp tỷ trọng lợi nhuận đáng kể, giúp đa dạng hóa nguồn thu và giảm thiểu rủi ro chu kỳ ngành thép.`,
+                chartData: [
+                    { year: '2023', revenue: 120355, profit: 6800 },
+                    { year: '2024F', revenue: 145000, profit: 12500 },
+                    { year: '2025F', revenue: 180000, profit: 22000 },
+                    { year: '2026F', revenue: 230000, profit: 32000 }
+                ]
+            },
+            { 
+                ticker: "FPT", name: "FPT Corp", sector: "Công nghệ", 
+                targets: { MBS: 158000, SSI: 152000, VND: 118200, VDSC: 145000, KBSV: 162000, SHS: 140000, VIETCAP: 148000, SHINHAN: 155000 }, 
+                current: 138000,
+                 consensus: 4,
+                story: `**1. Kỷ nguyên AI & Bán dẫn:**
+                FPT đang chuyển mình mạnh mẽ từ công ty gia công phần mềm sang cung cấp giải pháp chuyển đổi số toàn diện và tham gia chuỗi cung ứng bán dẫn toàn cầu. Việc hợp tác với NVIDIA xây dựng nhà máy AI Factory và mở rộng khoa Bán dẫn tại ĐH FPT là nền tảng cho tăng trưởng dài hạn.
+
+                **2. Tăng trưởng "Hai con số" bền vững:**
+                Dự báo doanh thu mảng Công nghệ Global tiếp tục tăng trưởng 25-30%/năm nhờ nhu cầu chi tiêu CNTT tại Nhật Bản (hưởng lợi tỷ giá JPY phục hồi), Mỹ và APAC. Mảng Viễn thông duy trì dòng tiền ổn định nhờ Data Center mới đi vào hoạt động.
+
+                **3. DC5 - Cú hích tại thị trường Hàn Quốc & Nhật Bản:**
+                Chiến lược DC5 (Digital Conglomerate 5.0) đang giúp FPT thâm nhập sâu vào các tập đoàn lớn tại Hàn Quốc (như LG, Shinhan) và Nhật Bản, mở ra các hợp đồng chục triệu USD (Mega deals).`,
+                chartData: [
+                    { year: '2023', revenue: 52618, profit: 7792 },
+                    { year: '2024F', revenue: 64000, profit: 9500 },
+                    { year: '2025F', revenue: 78000, profit: 11800 },
+                    { year: '2026F', revenue: 95000, profit: 14500 }
+                ]
+            },
+            { 
+                ticker: "MWG", name: "Thế Giới Di Động", sector: "Bán lẻ", 
+                targets: { MBS: 85000, SSI: 79000, VND: 84000, VDSC: 88000, KBSV: 82000, SHS: 80000, VIETCAP: 82000, SHINHAN: 83000 }, 
+                current: 68500,
+                 consensus: 4,
+                story: `**1. Bách Hóa Xanh (BHX) - Động lực tăng trưởng chính:**
+                BHX đã chính thức đạt điểm hòa vốn và bắt đầu có lãi ròng từ 2024. Năm 2026, BHX dự kiến mở rộng mạnh mẽ ra miền Trung và miền Bắc, trở thành chuỗi bán lẻ thực phẩm số 1 Việt Nam. Biên lợi nhuận ròng của chuỗi dự kiến đạt 2-3%.
+                
+                **2. Tái cấu trúc chuỗi ICT/CE:**
+                Quá trình "giảm lượng, tăng chất" tại TGDĐ và ĐMX đã hoàn tất. Doanh thu trên mỗi cửa hàng (SSSG) tăng trưởng trở lại nhờ phục hồi sức mua và tối ưu hóa chi phí vận hành. EraBlue tại Indonesia bắt đầu đóng góp doanh thu đáng kể.
+                
+                **3. Phục hồi tiêu dùng:**
+                Với dự báo GDP 2026 tăng trưởng 6.8-7.0%, thu nhập khả dụng của người dân tăng lên sẽ thúc đẩy nhu cầu tiêu dùng các sản phẩm điện máy và hàng thiết yếu cao cấp.`,
+                chartData: [
+                    { year: '2023', revenue: 118280, profit: 168 },
+                    { year: '2024F', revenue: 135000, profit: 4200 },
+                    { year: '2025F', revenue: 155000, profit: 6500 },
+                    { year: '2026F', revenue: 180000, profit: 8800 }
+                ]
+            },
+            { 
+                ticker: "CTG", name: "VietinBank", sector: "Ngân hàng", 
+                targets: { MBS: 48300, SSI: 42000, VND: 45000, VDSC: 44000, KBSV: 46000, SHS: 43200, VIETCAP: 41000 }, 
+                current: 35800,
+                 consensus: 5,
+                story: `**1. Chất lượng tài sản cải thiện rõ rệt:**
+                CTG đã hoàn thành trích lập dự phòng rủi ro lớn trong giai đoạn 2023-2024, đưa tỷ lệ bao phủ nợ xấu (LLR) lên mức an toàn (>160%). Áp lực trích lập giảm mạnh trong 2026 sẽ giải phóng lợi nhuận (Profit Booking).
+                
+                **2. Tăng trưởng tín dụng & NIM:**
+                Là ngân hàng quốc doanh chủ lực, CTG luôn được cấp room tín dụng cao (14-15%). NIM dự kiến duy trì ổn định quanh 3.0% nhờ chi phí vốn (COF) thấp và đẩy mạnh cho vay bán lẻ (Retail Lending).
+                
+                **3. Câu chuyện tăng vốn:**
+                Kế hoạch giữ lại lợi nhuận để tăng vốn điều lệ và khả năng phát hành riêng lẻ cho đối tác chiến lược nước ngoài là yếu tố hỗ trợ định giá (Re-rating) trong trung hạn.`,
+                chartData: [
+                    { year: '2023', revenue: 70000, profit: 25000 },
+                    { year: '2024F', revenue: 82000, profit: 29000 },
+                    { year: '2025F', revenue: 96000, profit: 36000 },
+                    { year: '2026F', revenue: 112000, profit: 45000 }
+                ]
+            },
+            { 
+                ticker: "MSN", name: "Masan Group", sector: "Tiêu dùng", 
+                targets: { MBS: 104000, SSI: 95000, VND: 98000, VDSC: 95000, KBSV: 98000, SHS: 92000, ABS: 102200 }, 
+                current: 74200,
+                 consensus: 4,
+                story: `**1. The Crown Jewel - Masan Consumer (MCH):**
+                Việc chuyển sàn MCH từ UPCoM sang HOSE (dự kiến cuối 2025 - đầu 2026) là chất xúc tác lớn nhất. MCH là "con gà đẻ trứng vàng" với tốc độ tăng trưởng doanh thu 15%/năm và biên lợi nhuận ròng cực cao (>20%).
+                
+                **2. Giảm đòn bẩy tài chính:**
+                Masan đã tích cực bán vốn tại các mảng không cốt lõi (Non-core) và nhận vốn từ Bain Capital, giúp giảm tỷ lệ Nợ ròng/EBITDA xuống mức an toàn (<3.5x). Chi phí tài chính giảm sẽ tác động trực tiếp lên lợi nhuận ròng (Bottom line).
+                
+                **3. Hệ sinh thái WinCommerce:**
+                Chuỗi WinMart/WinMart+ sau tái cấu trúc đã cải thiện hiệu quả hoạt động trên từng cửa hàng. Mô hình WiN (tích hợp Techcombank, Phúc Long, Dr.Win) đang chứng minh hiệu quả trong việc thu hút khách hàng trung thành.`,
+                chartData: [
+                    { year: '2023', revenue: 78252, profit: 419 },
+                    { year: '2024F', revenue: 90000, profit: 2500 },
+                    { year: '2025F', revenue: 105000, profit: 5000 },
+                    { year: '2026F', revenue: 120000, profit: 8000 }
+                ]
+            },
+            {
+                ticker: "VCB", name: "Vietcombank", sector: "Ngân hàng",
+                targets: { MBS: 105000, SSI: 102000, VND: 100000, VDSC: 105000, KBSV: 103000, SHINHAN: 104000 },
+                current: 92000,
+                 consensus: 3,
+                story: `**1. Pháo đài tài chính:** VCB luôn là ngân hàng có chất lượng tài sản tốt nhất hệ thống với tỷ lệ nợ xấu thấp kỷ lục (<1%) và tỷ lệ bao phủ nợ xấu cao nhất ngành.
+                **2. Hưởng lợi môi trường lãi suất thấp:** Với lợi thế CASA khổng lồ, VCB có chi phí vốn thấp nhất thị trường, giúp duy trì NIM ngay cả khi lãi suất cho vay giảm để hỗ trợ nền kinh tế.
+                **3. Phát hành riêng lẻ:** Kế hoạch phát hành 6.5% cổ phần cho đối tác chiến lược (như Mizuho) với mức định giá cao (P/B > 2.5x) vẫn là câu chuyện hỗ trợ giá cổ phiếu trong dài hạn.`,
+                chartData: [
+                    { year: '2023', revenue: 65000, profit: 41200 },
+                    { year: '2024F', revenue: 75000, profit: 46000 },
+                    { year: '2025F', revenue: 88000, profit: 53000 },
+                    { year: '2026F', revenue: 102000, profit: 60000 }
+                ]
+            },
+            {
+                ticker: "MBB", name: "MBBank", sector: "Ngân hàng",
+                targets: { MBS: 28600, SSI: 27500, VND: 28000, SHINHAN: 29000, ABS: 28500 },
+                current: 24500,
+                 consensus: 4,
+                story: `**1. Hệ sinh thái tài chính toàn diện:** MBB sở hữu hệ sinh thái đa dạng từ Bảo hiểm (MIC, MB Ageas), Chứng khoán (MBS) đến Tài chính tiêu dùng (Mcredit), tạo ra nguồn thu ngoài lãi (Fee Income) mạnh mẽ.
+                **2. Chuyển đổi số dẫn đầu:** Nền tảng App MBBank thu hút hàng triệu khách hàng mới mỗi năm với chi phí thấp (CAC thấp), giúp CASA luôn duy trì trong Top đầu ngành (khoảng 35-40%).
+                **3. Định giá hấp dẫn:** P/B của MBB thường giao dịch quanh mức 1.0-1.2x, thấp hơn đáng kể so với hiệu quả sinh lời (ROE > 20%) mà ngân hàng mang lại.`,
+                chartData: [
+                    { year: '2023', revenue: 45000, profit: 26300 },
+                    { year: '2024F', revenue: 52000, profit: 28500 },
+                    { year: '2025F', revenue: 60000, profit: 33000 },
+                    { year: '2026F', revenue: 70000, profit: 39000 }
+                ]
+            },
+            {
+                ticker: "ACB", name: "ACB", sector: "Ngân hàng",
+                targets: { MBS: 33400, SSI: 32000, SHINHAN: 33000, VDSC: 32500, VIETCAP: 31500 },
+                current: 28000,
+                 consensus: 3,
+                story: `**1. Quản trị rủi ro thận trọng:** ACB nổi tiếng với khẩu vị rủi ro thấp, không dính dáng đến trái phiếu doanh nghiệp rủi ro cao. Điều này giúp ngân hàng đi qua các giai đoạn biến động của thị trường một cách an toàn.
+                **2. Ngân hàng bán lẻ hàng đầu:** Tập trung vào phân khúc khách hàng cá nhân và SME, ACB có danh mục cho vay phân tán tốt và lợi suất sinh lời ổn định.
+                **3. Tăng trưởng đều đặn:** Cam kết tăng trưởng lợi nhuận 15-20%/năm và duy trì chính sách cổ tức đều đặn (tiền mặt + cổ phiếu) là điểm cộng cho các nhà đầu tư dài hạn.`,
+                chartData: [
+                     { year: '2023', revenue: 32000, profit: 20000 },
+                     { year: '2024F', revenue: 36000, profit: 22000 },
+                     { year: '2025F', revenue: 41000, profit: 25000 },
+                     { year: '2026F', revenue: 48000, profit: 29000 }
+                ]
+            },
+            {
+                ticker: "KDH", name: "Khang Điền", sector: "Bất động sản",
+                targets: { MBS: 41500, SSI: 43200, VND: 42000, VIETCAP: 40500 },
+                current: 36500,
+                 consensus: 4,
+                story: `**1. Pháp lý "sạch" nhất ngành:** Trong bối cảnh nhiều dự án BĐS bị vướng pháp lý, KDH nổi lên là chủ đầu tư uy tín với các dự án luôn hoàn thiện thủ tục trước khi mở bán.
+                **2. Quỹ đất chiến lược tại TP.HCM:** Sở hữu quỹ đất lớn tại khu Đông và khu Nam TP.HCM (Bình Tân, Bình Chánh, TP. Thủ Đức), KDH sẵn sàng tung ra các dự án mới (The Privia, Clarita) đón đầu đà phục hồi của thị trường BĐS 2026.
+                **3. Hợp tác với Keppel Land:** Sự hợp tác chiến lược với Keppel Land giúp KDH nâng tầm thương hiệu và đảm bảo nguồn vốn triển khai dự án.`,
+                chartData: [
+                    { year: '2023', revenue: 2100, profit: 730 },
+                    { year: '2024F', revenue: 3500, profit: 1100 },
+                    { year: '2025F', revenue: 5200, profit: 1800 },
+                    { year: '2026F', revenue: 6500, profit: 2400 }
+                ]
+            },
+            {
+                ticker: "IDC", name: "IDICO", sector: "BĐS KCN",
+                targets: { MBS: 65000, SSI: 63000, SHS: 62000, VDSC: 64000 },
+                current: 56000,
+                 consensus: 4,
+                story: `**1. Quỹ đất KCN sẵn sàng cho thuê lớn:** IDC sở hữu quỹ đất thương phẩm còn lại lớn (>500ha) tại các vị trí đắc địa (Long An, Bà Rịa - Vũng Tàu, Bắc Ninh), sẵn sàng đón sóng FDI mới.
+                **2. Dòng tiền cổ tức dồi dào:** Mô hình ghi nhận doanh thu một lần giúp IDC có dòng tiền mặt mạnh, duy trì tỷ lệ cổ tức tiền mặt cao (30-40%/năm).
+                **3. Mảng năng lượng bổ trợ:** IDC còn sở hữu các dự án thủy điện và kinh doanh điện trong KCN, mang lại dòng tiền ổn định bất chấp biến động chu kỳ BĐS.`,
+                chartData: [
+                    { year: '2023', revenue: 7200, profit: 1600 },
+                    { year: '2024F', revenue: 8500, profit: 2100 },
+                    { year: '2025F', revenue: 9200, profit: 2600 },
+                    { year: '2026F', revenue: 10500, profit: 3200 }
+                ]
+            },
+            {
+                ticker: "PNJ", name: "Vàng Phú Nhuận", sector: "Bán lẻ",
+                targets: { KBSV: 106600, SSI: 105000, VND: 102000, VDSC: 104000 },
+                current: 94000,
+                 consensus: 4,
+                story: `**1. Vị thế độc tôn:** PNJ thống lĩnh thị trường bán lẻ trang sức có thương hiệu tại Việt Nam với thị phần áp đảo.
+                **2. Tối ưu hóa vận hành:** Hệ thống ERP mới và chiến lược Marketing hiệu quả giúp PNJ duy trì biên lợi nhuận gộp cao (~18%) và thu hút khách hàng trẻ (Gen Z).
+                **3. Mở rộng mạng lưới:** Tiếp tục mở rộng cửa hàng tại các đô thị loại 2, loại 3, dư địa tăng trưởng còn rất lớn khi tầng lớp trung lưu Việt Nam gia tăng.`,
+                chartData: [
+                    { year: '2023', revenue: 33000, profit: 1970 },
+                    { year: '2024F', revenue: 38000, profit: 2400 },
+                    { year: '2025F', revenue: 44000, profit: 2900 },
+                    { year: '2026F', revenue: 51000, profit: 3500 }
+                ]
+            },
+            {
+                ticker: "VHC", name: "Vĩnh Hoàn", sector: "Thủy sản",
+                targets: { SHS: 85000, VND: 82000, VDSC: 84000, SSI: 83000 },
+                current: 72000,
+                 consensus: 3,
+                story: `**1. Nữ hoàng Cá Tra:** VHC là doanh nghiệp xuất khẩu cá tra lớn nhất Việt Nam, chiếm thị phần lớn tại Mỹ.
+                **2. Collagen & Gelatin:** Mảng kinh doanh phụ phẩm (C&G) có biên lợi nhuận cao đang đóng góp ngày càng lớn vào cơ cấu lợi nhuận, giúp VHC giảm phụ thuộc vào biến động giá cá nguyên liệu.
+                **3. Phục hồi nhu cầu Mỹ:** Tồn kho tại Mỹ giảm và nhu cầu tiêu dùng phục hồi là động lực chính cho xuất khẩu 2026.`,
+                 chartData: [
+                    { year: '2023', revenue: 10000, profit: 950 },
+                    { year: '2024F', revenue: 12500, profit: 1400 },
+                    { year: '2025F', revenue: 14000, profit: 1800 },
+                    { year: '2026F', revenue: 16000, profit: 2200 }
+                ]
+            },
+             {
+                ticker: "PVD", name: "PV Drilling", sector: "Dầu khí",
+                targets: { ABS: 34000, VND: 35000, MBS: 33500, KBSV: 34500 },
+                current: 29500,
+                 consensus: 3,
+                story: `**1. Giá thuê giàn khoan cao:** Thị trường khoan khu vực Đông Nam Á đang thiếu hụt nguồn cung, đẩy giá thuê giàn JU lên mức cao kỷ lục và dự kiến duy trì trong 2026.
+                **2. Full việc làm:** Các giàn khoan của PVD đã kín lịch hoạt động xuyên suốt 2026 với các hợp đồng dài hạn tại nước ngoài (Indonesia, Malaysia).
+                **3. Dự án Lô B - Ô Môn:** Siêu dự án Lô B khởi động sẽ mang lại khối lượng công việc khổng lồ cho mảng dịch vụ kỹ thuật giếng khoan của PVD tại thị trường nội địa.`,
+                 chartData: [
+                    { year: '2023', revenue: 5800, profit: 540 },
+                    { year: '2024F', revenue: 7500, profit: 1200 },
+                    { year: '2025F', revenue: 9000, profit: 1800 },
+                    { year: '2026F', revenue: 11000, profit: 2500 }
+                ]
+            },
+             {
+                ticker: "CTD", name: "Coteccons", sector: "Xây dựng",
+                targets: { KBSV: 96800, SSI: 85000, VND: 88000, VDSC: 90000 },
+                current: 72000,
+                 consensus: 4,
+                story: `**1. Leader mảng Xây dựng công nghiệp:** CTD đang chuyển dịch mạnh mẽ sang mảng xây dựng nhà máy cho các ông lớn FDI (Lego, Pandora...), mảng có biên lợi nhuận tốt và dòng tiền đảm bảo hơn xây dựng dân dụng.
+                **2. Backlog kỷ lục:** Giá trị hợp đồng ký mới (Backlog) đạt mức kỷ lục đảm bảo khối lượng công việc cho 2025-2026.
+                **3. Tái cấu trúc thành công:** Sau giai đoạn biến động nhân sự, CTD đã ổn định bộ máy và lấy lại niềm tin của các chủ đầu tư lớn.`,
+                 chartData: [
+                    { year: '2023', revenue: 16000, profit: 250 },
+                    { year: '2024F', revenue: 21000, profit: 600 },
+                    { year: '2025F', revenue: 26000, profit: 900 },
+                    { year: '2026F', revenue: 32000, profit: 1300 }
+                ]
+            },
+            {
+                ticker: "VNM", name: "Vinamilk", sector: "Tiêu dùng",
+                targets: { MBS: 78000, SSI: 72000, VND: 74000, VDSC: 76000, KBSV: 75000, ABS: 69900 },
+                current: 64000,
+                 consensus: 3,
+                story: `**1. Tái định vị thương hiệu:** Chiến dịch Re-branding lớn nhất lịch sử giúp VNM trẻ hóa hình ảnh, thu hút lại người tiêu dùng và giành lại thị phần.
+                **2. Giá nguyên liệu giảm:** Giá sữa bột nguyên liệu thế giới hạ nhiệt giúp cải thiện biên lợi nhuận gộp.
+                **3. Cổ tức tiền mặt cao:** Với dòng tiền dồi dào, VNM luôn là "hầm trú ẩn" an toàn với tỷ suất cổ tức tiền mặt hấp dẫn (6-7%/năm).`,
+                chartData: [
+                    { year: '2023', revenue: 60400, profit: 9000 },
+                    { year: '2024F', revenue: 63000, profit: 9800 },
+                    { year: '2025F', revenue: 67000, profit: 10500 },
+                    { year: '2026F', revenue: 72000, profit: 11500 }
+                ]
+            },
+            {
+                ticker: "VRE", name: "Vincom Retail", sector: "BĐS Bán lẻ",
+                targets: { SSI: 28000, VND: 30000, KBSV: 29000 },
+                current: 22000,
+                 consensus: 4,
+                story: `**1. Vua mặt bằng bán lẻ:** VRE sở hữu thị phần mặt bằng bán lẻ lớn nhất Việt Nam. Với việc tiêu dùng hồi phục, tỷ lệ lấp đầy (Occupancy rate) tại các TTTM Vincom đang tăng trở lại mức trước dịch.
+                **2. Khai trương TTTM mới:** Kế hoạch khai trương các Vincom Mega Mall mới (Grand Park, Ocean Park 2, 3) sẽ gia tăng diện tích sàn cho thuê (GFA) đáng kể trong 2026.
+                **3. Dòng tiền ổn định:** Mô hình kinh doanh cho thuê tạo ra dòng tiền đều đặn, ít rủi ro hơn mảng phát triển BĐS nhà ở.`,
+                chartData: [
+                    { year: '2023', revenue: 9800, profit: 4400 },
+                    { year: '2024F', revenue: 11000, profit: 4800 },
+                    { year: '2025F', revenue: 12500, profit: 5500 },
+                    { year: '2026F', revenue: 14000, profit: 6200 }
+                ]
+            },
+            {
+                ticker: "NLG", name: "Nam Long", sector: "Bất động sản",
+                targets: { MBS: 45000, SSI: 44000, VND: 46000, VDSC: 45500 },
+                current: 39000,
+                 consensus: 4,
+                story: `**1. Phân khúc nhà ở vừa túi tiền (Affordable Housing):** Chiến lược tập trung vào dòng sản phẩm Ehome, Flora, Valora đáp ứng nhu cầu ở thực - phân khúc có thanh khoản tốt nhất thị trường hiện nay.
+                **2. Hợp tác Nhật Bản:** Các đối tác Nhật Bản (Hankyu Hanshin, Nishi Nippon) đồng hành lâu dài giúp NLG đảm bảo vốn và chất lượng dự án.
+                **3. Điểm rơi bàn giao:** Các dự án lớn như Izumi City, Waterpoint giai đoạn tiếp theo sẽ bắt đầu bàn giao và ghi nhận doanh thu mạnh trong 2025-2026.`,
+                chartData: [
+                    { year: '2023', revenue: 3100, profit: 480 },
+                    { year: '2024F', revenue: 5500, profit: 900 },
+                    { year: '2025F', revenue: 7200, profit: 1400 },
+                    { year: '2026F', revenue: 9000, profit: 1900 }
+                ]
+            },
+            {
+                ticker: "HHV", name: "Đèo Cả", sector: "Xây dựng HT",
+                targets: { KBSV: 17100, VND: 16500, MBS: 16800 },
+                current: 13500,
+                 consensus: 5,
+                story: `**1. Trùm BOT & Đầu tư công:** HHV là đơn vị hàng đầu trong lĩnh vực đầu tư và thi công hạ tầng giao thông (hầm, cao tốc). Các dự án BOT đang mang lại dòng tiền thu phí ổn định và tăng trưởng hàng năm.
+                **2. Dự án Cao tốc Bắc Nam:** HHV liên tiếp trúng thầu các gói thầu lớn của dự án Cao tốc Bắc Nam giai đoạn 2 và các dự án liên kết vùng, đảm bảo khối lượng thi công lớn (Backlog) cho mảng xây lắp.
+                **3. Tăng vốn:** Kế hoạch tăng vốn thành công giúp HHV nâng cao năng lực tài chính để tham gia các dự án PPP quy mô lớn hơn.`,
+                chartData: [
+                    { year: '2023', revenue: 2600, profit: 360 },
+                    { year: '2024F', revenue: 3200, profit: 450 },
+                    { year: '2025F', revenue: 4000, profit: 580 },
+                    { year: '2026F', revenue: 5000, profit: 750 }
+                ]
+            },
+            {
+                ticker: "SSI", name: "Chứng khoán SSI", sector: "Chứng khoán",
+                targets: { SSI: 42500, MBS: 38000, VND: 40000, VDSC: 39000 },
+                current: 34000,
+                 consensus: 3,
+                story: `**1. Dẫn đầu thị phần:** SSI luôn duy trì vị thế Top đầu về thị phần môi giới và năng lực tư vấn tài chính doanh nghiệp (IB).
+                **2. Hưởng lợi từ Nâng hạng & KRX:** Là công ty chứng khoán đầu ngành, SSI sẽ hưởng lợi lớn nhất khi hệ thống KRX vận hành đầy đủ và thị trường Việt Nam được nâng hạng, thu hút dòng vốn ngoại khổng lồ.
+                **3. Tăng vốn khủng:** Việc phát hành tăng vốn giúp SSI củng cố năng lực cho vay Margin và đầu tư tự doanh, đón đầu chu kỳ tăng trưởng mới của thị trường.`,
+                chartData: [
+                    { year: '2023', revenue: 6900, profit: 2200 },
+                    { year: '2024F', revenue: 8500, profit: 3200 },
+                    { year: '2025F', revenue: 11000, profit: 4500 },
+                    { year: '2026F', revenue: 14000, profit: 5800 }
+                ]
+            },
+            {
+                ticker: "VPB", name: "VPBank", sector: "Ngân hàng",
+                targets: { VND: 26500, SHINHAN: 25000, MBS: 24500 },
+                current: 19500,
+                 consensus: 4,
+                story: `**1. Vốn chủ sở hữu khủng:** Sau khi bán vốn cho SMBC, VPB trở thành ngân hàng có vốn chủ sở hữu lớn thứ 2 hệ thống, tạo bộ đệm vốn dày để đẩy mạnh tăng trưởng tín dụng.
+                **2. Phục hồi FE Credit:** Quá trình tái cấu trúc FE Credit đang cho thấy tín hiệu tích cực. Khi nền kinh tế phục hồi, mảng tài chính tiêu dùng sẽ quay trở lại là động lực lợi nhuận quan trọng.
+                **3. Chiến lược Khách hàng lớn:** VPB đang đẩy mạnh mảng bán buôn (FDI, Doanh nghiệp lớn) bên cạnh thế mạnh bán lẻ truyền thống.`,
+                 chartData: [
+                    { year: '2023', revenue: 48000, profit: 10000 },
+                    { year: '2024F', revenue: 55000, profit: 16000 },
+                    { year: '2025F', revenue: 65000, profit: 22000 },
+                    { year: '2026F', revenue: 78000, profit: 28000 }
+                ]
+            }
+        ];
+
+        // --- COMPONENTS ---
+
+        const StockDetailModal = ({ isOpen, onClose, stock }) => {
+            if (!isOpen || !stock) return null;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm modal-enter-active">
+                    <div className="bg-white rounded-2xl w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                                    {stock.ticker}
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">{stock.name}</h2>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="px-2 py-0.5 bg-gray-200 text-gray-700 text-xs font-bold rounded uppercase">{stock.sector}</span>
+                                        <span className="text-gray-500 text-sm">Giá hiện tại: <span className="font-mono font-bold text-gray-900">{stock.current.toLocaleString()}</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                                <X size={28} className="text-gray-600" />
+                            </button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-gray-50/50">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                <div className="lg:col-span-7 space-y-6">
+                                    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                                        <h3 className="text-xl font-bold text-blue-800 mb-4 flex items-center gap-2">
+                                            <Briefcase size={24} /> Câu Chuyện Đầu Tư 2026
+                                        </h3>
+                                        <div className="prose prose-blue max-w-none text-gray-700 leading-relaxed text-justify whitespace-pre-line">
+                                            {stock.story}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="lg:col-span-5 space-y-6">
+                                    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                                        <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 tracking-wider">Tăng trưởng KQKD (Tỷ VNĐ)</h3>
+                                        <div className="h-[250px] w-full">
+                                            {hasCharts ? (
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <ComposedChart data={stock.chartData}>
+                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                                        <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6b7280'}} />
+                                                        <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#6b7280'}} tickFormatter={(value) => value/1000 + 'k'} />
+                                                        <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#6b7280'}} />
+                                                        <Tooltip 
+                                                            contentStyle={{backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'}}
+                                                            itemStyle={{fontSize: '12px', fontWeight: 600}}
+                                                        />
+                                                        <Legend wrapperStyle={{fontSize: '12px', paddingTop: '10px'}} />
+                                                        <Bar yAxisId="left" dataKey="revenue" name="Doanh thu" fill="#93c5fd" radius={[4, 4, 0, 0]} barSize={30} />
+                                                        <Line yAxisId="right" type="monotone" dataKey="profit" name="Lợi nhuận sau thuế" stroke="#2563eb" strokeWidth={3} dot={{r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#fff'}} />
+                                                    </ComposedChart>
+                                                </ResponsiveContainer>
+                                            ) : <div className="h-full flex items-center justify-center text-gray-400">Loading Chart...</div>}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                                        <h3 className="text-sm font-bold text-gray-500 uppercase mb-4 tracking-wider">Đồng thuận Mục tiêu Giá</h3>
+                                        <div className="space-y-3">
+                                            {Object.entries(stock.targets).slice(0, 5).map(([broker, target]) => (
+                                                <div key={broker} className="flex justify-between items-center text-sm border-b border-gray-50 last:border-0 pb-2 last:pb-0">
+                                                    <span className="font-medium text-gray-600">{broker}</span>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="font-mono font-bold text-gray-900">{target.toLocaleString()}</span>
+                                                        <span className={`text-xs px-2 py-0.5 rounded font-bold ${target > stock.current ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                            {((target - stock.current)/stock.current * 100).toFixed(1)}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const DetailModal = ({ isOpen, onClose, data }) => {
+            if (!isOpen || !data) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm modal-enter-active">
+                    <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+                        <div className="p-6 border-b flex justify-between items-start bg-gray-50">
+                            <div>
+                                <span className="text-sm font-bold tracking-wider text-blue-600 uppercase mb-1 block">Chi tiết Chiến lược</span>
+                                <h2 className="text-3xl font-bold text-gray-900">{data.title}</h2>
+                                {data.brokerName && <p className="text-gray-500 mt-1 font-medium">Nguồn: {data.brokerName}</p>}
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                                <X size={28} className="text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-white">
+                             <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: data.content }}></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const StrategyCard = ({ brokerKey, data, onOpen }) => (
+            <div className="bg-white rounded-xl border border-gray-100 pro-shadow hover:shadow-lg transition-all duration-300 flex flex-col h-full overflow-hidden group cursor-pointer" onClick={() => onOpen({ title: data.name, content: data.content }, data.name)}>
+                <div className="h-2 w-full" style={{ backgroundColor: data.color }}></div>
+                <div className="p-6 flex flex-col h-full">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md" style={{ backgroundColor: data.color }}>
+                                {brokerKey.substring(0,3)}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900">{data.name}</h3>
+                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">VN-Index: {data.targetIndex}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <p className="text-sm font-semibold text-gray-800 italic">"{data.theme}"</p>
+                    </div>
+                    <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center text-xs text-gray-500">
+                        <span>Nhấn để xem chi tiết ></span>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SectorCard = ({ sector, onOpen }) => {
+            const getSentimentColor = (s) => {
+                if(s === 'positive') return 'bg-green-100 text-green-700 border-green-200';
+                if(s === 'neutral') return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                return 'bg-red-100 text-red-700 border-red-200';
+            };
+            return (
+                 <div 
+                    onClick={() => onOpen({ title: sector.name, content: sector.content })}
+                    className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer group"
+                >
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600">{sector.name}</h3>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getSentimentColor(sector.sentiment)}`}>
+                            {sector.sentiment === 'positive' ? 'Khả quan' : sector.sentiment === 'neutral' ? 'Trung lập' : 'Kém khả quan'}
+                        </span>
+                    </div>
+                    <div className="mb-3">
+                        <span className="text-3xl font-bold text-gray-800">{sector.growth}</span>
+                        <span className="text-xs text-gray-500 ml-2">Tăng trưởng LNST dự phóng</span>
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-3">{sector.desc}</p>
+                </div>
+            )
+        };
+
+        const SectorAnalysisView = ({ onSelectSector }) => {
+             const [modalData, setModalData] = useState(null);
+             return (
+                <div className="space-y-6 animate-fade-in">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Phân tích Ngành 2026</h2>
+                        <p className="text-gray-500">Tổng hợp quan điểm đầu tư theo từng nhóm ngành chính.</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {SECTOR_DATA.map(sector => (
+                            <SectorCard key={sector.id} sector={sector} onOpen={setModalData} />
+                        ))}
+                    </div>
+                     <DetailModal isOpen={!!modalData} onClose={() => setModalData(null)} data={modalData} />
+                </div>
+             );
+        };
+
+        const StockAnalysisView = ({ onSelectStock }) => {
+             // Calculate averages & Process Data
+             const processedData = useMemo(() => {
+                 return TOP_20_STOCKS.map(stock => {
+                     const targets = Object.values(stock.targets);
+                     const avg = targets.reduce((a,b) => a+b, 0) / targets.length;
+                     const upside = ((avg - stock.current) / stock.current * 100);
+                     return { ...stock, avg, upside: parseFloat(upside.toFixed(1)) };
+                 });
+             }, []);
+
+             const topUpside = useMemo(() => {
+                 return [...processedData].sort((a,b) => b.upside - a.upside).slice(0, 10);
+             }, [processedData]);
+
+             const [searchTerm, setSearchTerm] = useState("");
+             const filteredData = useMemo(() => processedData.filter(stock => 
+                stock.ticker.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                stock.name.toLowerCase().includes(searchTerm.toLowerCase())
+             ), [processedData, searchTerm]);
+
+             return (
+                 <div className="space-y-8 animate-fade-in">
+                     {/* Search Bar */}
+                     <div className="flex justify-end">
+                        <div className="relative w-full max-w-md">
+                            <input 
+                                type="text" 
+                                placeholder="Tìm kiếm cổ phiếu (Mã, Tên)..." 
+                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <Search className="absolute left-3 top-3.5 text-gray-400" size={20} />
+                        </div>
+                     </div>
+
+                     {/* Top 10 Upside Cards - Only show if not searching */}
+                     {!searchTerm && (
+                         <div>
+                            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <TrendingUp className="text-green-600" /> Top 10 Upside Tiềm Năng Nhất
+                            </h2>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                {topUpside.map((stock, idx) => (
+                                    <div 
+                                        key={stock.ticker} 
+                                        onClick={() => onSelectStock(stock)}
+                                        className="bg-white p-4 rounded-xl border border-green-100 shadow-sm hover:shadow-md hover:border-green-300 transition-all cursor-pointer group"
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="font-bold text-lg text-gray-900 group-hover:text-blue-600">{stock.ticker}</span>
+                                            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">#{idx + 1}</span>
+                                        </div>
+                                        <div className="text-2xl font-bold text-green-600 mb-1">+{stock.upside}%</div>
+                                        <p className="text-xs text-gray-500 truncate">{stock.name}</p>
+                                    </div>
+                                ))}
+                            </div>
+                         </div>
+                     )}
+
+                     {/* The Matrix Table (Top 20) */}
+                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                             <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                 <Briefcase className="text-blue-600" />
+                                 Danh mục Cổ phiếu Chiến lược
+                             </h3>
+                         </div>
+                         <div className="overflow-x-auto">
+                             <table className="w-full text-sm text-left">
+                                 <thead className="bg-white text-gray-600 font-semibold uppercase text-xs border-b border-gray-200">
+                                     <tr>
+                                         <th className="px-6 py-4">Mã CP</th>
+                                         <th className="px-6 py-4">Ngành</th>
+                                         <th className="px-6 py-4">Giá Hiện Tại</th>
+                                         <th className="px-6 py-4 text-center bg-blue-50 text-blue-800 border-x border-blue-100">Mục Tiêu TB</th>
+                                         <th className="px-6 py-4 text-center text-green-700 font-bold">Upside</th>
+                                         <th className="px-6 py-4 text-center">Ma trận CTCK</th>
+                                         <th className="px-6 py-4 hidden lg:table-cell text-right">MBS</th>
+                                         <th className="px-6 py-4 hidden lg:table-cell text-right">SSI</th>
+                                         <th className="px-6 py-4 hidden lg:table-cell text-right">VND</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody className="divide-y divide-gray-100">
+                                     {filteredData.map((stock, idx) => (
+                                         <tr 
+                                            key={idx} 
+                                            onClick={() => onSelectStock(stock)}
+                                            className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                                         >
+                                             <td className="px-6 py-4 font-bold text-gray-900 group-hover:text-blue-600">{stock.ticker}</td>
+                                             <td className="px-6 py-4 text-gray-500">
+                                                 <span className="px-2 py-1 bg-gray-100 rounded text-xs">{stock.sector}</span>
+                                             </td>
+                                             <td className="px-6 py-4 font-mono text-gray-600">{stock.current.toLocaleString()}</td>
+                                             <td className="px-6 py-4 font-mono font-bold text-blue-700 text-center bg-blue-50/30 border-x border-blue-50/50">
+                                                 {stock.avg.toLocaleString()}
+                                             </td>
+                                             <td className="px-6 py-4 font-bold text-green-600 text-center">+{stock.upside}%</td>
+                                             <td className="px-6 py-4 flex justify-center gap-1">
+                                                 {[...Array(5)].map((_, i) => (
+                                                     <div key={i} className={`w-2 h-4 rounded-sm ${i < stock.consensus ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                                                 ))}
+                                             </td>
+                                             <td className="px-6 py-4 hidden lg:table-cell text-gray-400 font-mono text-xs text-right">{stock.targets.MBS?.toLocaleString() || "-"}</td>
+                                             <td className="px-6 py-4 hidden lg:table-cell text-gray-400 font-mono text-xs text-right">{stock.targets.SSI?.toLocaleString() || "-"}</td>
+                                             <td className="px-6 py-4 hidden lg:table-cell text-gray-400 font-mono text-xs text-right">{stock.targets.VND?.toLocaleString() || "-"}</td>
+                                         </tr>
+                                     ))}
+                                 </tbody>
+                             </table>
+                         </div>
+                     </div>
+                 </div>
+             );
+        };
+
+        const CustomRecommendationsView = ({ recs, onAdd, onDelete, onUpdate }) => {
+            const [form, setForm] = useState({
+                ticker: '',
+                buyPrice: '',
+                targetPrice: '',
+                stopLoss: '',
+                rationale: ''
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!form.ticker || !form.buyPrice || !form.targetPrice || !form.stopLoss) return;
+                onAdd({ 
+                    ...form, 
+                    currentPrice: form.buyPrice, // Initial current price is same as buy price
+                    id: Date.now() 
+                });
+                setForm({ ticker: '', buyPrice: '', targetPrice: '', stopLoss: '', rationale: '' });
+            };
+
+            const getStatus = (current, target, stopLoss, originalAction) => {
+                const cur = parseFloat(current);
+                const tar = parseFloat(target);
+                const sl = parseFloat(stopLoss);
+
+                if (cur >= tar) return { label: 'Chốt lời', color: 'bg-purple-100 text-purple-700 border-purple-200' };
+                if (cur <= sl) return { label: 'Cắt lỗ', color: 'bg-red-100 text-red-700 border-red-200' };
+                
+                // Near Target (within 3%)
+                if (cur >= tar * 0.97) return { label: 'Gần đạt mục tiêu', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' };
+                
+                // Near Stop Loss (within 3%)
+                if (cur <= sl * 1.03) return { label: 'Cảnh báo cắt lỗ', color: 'bg-orange-100 text-orange-700 border-orange-200' };
+
+                return { label: 'Nắm giữ', color: 'bg-blue-50 text-blue-600 border-blue-100' }; // Default
+            };
+
+            return (
+                <div className="space-y-8 animate-fade-in">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Khuyến nghị Cá nhân</h2>
+                        <p className="text-gray-500">Tùy chỉnh và quản lý danh mục khuyến nghị của riêng bạn với cảnh báo tự động.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Input Form */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm sticky top-6">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <Plus className="text-blue-600" size={20}/> Thêm Khuyến nghị Mới
+                                </h3>
+                                <form onSubmit={handleSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Mã Cổ phiếu</label>
+                                        <input 
+                                            type="text" 
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                                            placeholder="VD: VCB"
+                                            value={form.ticker}
+                                            onChange={e => setForm({...form, ticker: e.target.value.toUpperCase()})}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Giá Vốn (Mua)</label>
+                                            <input 
+                                                type="number" 
+                                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="VD: 80000"
+                                                value={form.buyPrice}
+                                                onChange={e => setForm({...form, buyPrice: e.target.value})}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Giá Mục tiêu</label>
+                                            <input 
+                                                type="number" 
+                                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="VD: 100000"
+                                                value={form.targetPrice}
+                                                onChange={e => setForm({...form, targetPrice: e.target.value})}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Giá Cắt lỗ</label>
+                                        <input 
+                                            type="number" 
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                                            placeholder="VD: 75000"
+                                            value={form.stopLoss}
+                                            onChange={e => setForm({...form, stopLoss: e.target.value})}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Luận điểm Đầu tư</label>
+                                        <textarea 
+                                            rows="3"
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Nhập lý do khuyến nghị..."
+                                            value={form.rationale}
+                                            onChange={e => setForm({...form, rationale: e.target.value})}
+                                        ></textarea>
+                                    </div>
+                                    <button 
+                                        type="submit"
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
+                                    >
+                                        <Plus size={18} /> Thêm vào Danh sách
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        {/* Display List */}
+                        <div className="lg:col-span-2 space-y-4">
+                            {recs.length === 0 ? (
+                                <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300 text-gray-400">
+                                    Chưa có khuyến nghị nào. Hãy thêm mới!
+                                </div>
+                            ) : (
+                                recs.map(rec => {
+                                    const profitLoss = ((rec.currentPrice - rec.buyPrice) / rec.buyPrice) * 100;
+                                    const status = getStatus(rec.currentPrice, rec.targetPrice, rec.stopLoss);
+                                    
+                                    return (
+                                        <div key={rec.id} className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all group relative">
+                                            <button 
+                                                onClick={() => onDelete(rec.id)}
+                                                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                            
+                                            {/* Header Row */}
+                                            <div className="flex items-start gap-4 mb-4">
+                                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center font-bold text-lg shadow-sm">
+                                                    {rec.ticker}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-1">
+                                                        <h3 className="font-bold text-gray-900 text-lg">{rec.ticker}</h3>
+                                                        <span className={`px-2 py-0.5 rounded text-xs font-bold border ${status.color} flex items-center gap-1`}>
+                                                            {status.label.includes('cắt lỗ') || status.label.includes('Cảnh báo') ? <AlertTriangle size={12}/> : null}
+                                                            {status.label}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                                                        <span>Giá vốn: <strong>{parseInt(rec.buyPrice).toLocaleString()}</strong></span>
+                                                        <span>Mục tiêu: <strong className="text-green-600">{parseInt(rec.targetPrice).toLocaleString()}</strong></span>
+                                                        <span>Cắt lỗ: <strong className="text-red-500">{parseInt(rec.stopLoss).toLocaleString()}</strong></span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className={`text-xl font-bold ${profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {profitLoss >= 0 ? '+' : ''}{profitLoss.toFixed(2)}%
+                                                    </div>
+                                                    <div className="text-xs text-gray-400">Lợi nhuận tạm tính</div>
+                                                </div>
+                                            </div>
+
+                                            {/* Live Update Row */}
+                                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-3 flex items-center justify-between">
+                                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                                    <Zap size={14} className="text-amber-500" /> Cập nhật giá thị trường:
+                                                </label>
+                                                <input 
+                                                    type="number" 
+                                                    className="w-32 px-2 py-1 text-right text-sm font-bold border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                    value={rec.currentPrice}
+                                                    onChange={(e) => onUpdate(rec.id, e.target.value)}
+                                                />
+                                            </div>
+
+                                            <div className="text-sm text-gray-600 leading-relaxed text-justify italic border-l-2 border-gray-200 pl-3">
+                                                "{rec.rationale}"
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState("overview"); 
+            const [strategyModalData, setStrategyModalData] = useState(null);
+            const [selectedStock, setSelectedStock] = useState(null);
+            
+            // Personal Recommendations State
+            const [personalRecs, setPersonalRecs] = useState([
+                {
+                    id: 1,
+                    ticker: 'FPT',
+                    buyPrice: '135000',
+                    currentPrice: '138000',
+                    targetPrice: '155000',
+                    stopLoss: '128000',
+                    rationale: 'Tiếp tục hưởng lợi từ xu hướng AI toàn cầu và mảng giáo dục tăng trưởng ổn định. Định giá P/E vẫn hấp dẫn.'
+                }
+            ]);
+
+            const addPersonalRec = (rec) => {
+                setPersonalRecs([rec, ...personalRecs]);
+            };
+
+            const deletePersonalRec = (id) => {
+                setPersonalRecs(personalRecs.filter(r => r.id !== id));
+            };
+
+            const updateRecPrice = (id, newPrice) => {
+                setPersonalRecs(personalRecs.map(r => 
+                    r.id === id ? { ...r, currentPrice: newPrice } : r
+                ));
+            };
+
+            return (
+                <div className="flex min-h-screen bg-[#f3f4f6]">
+                    {/* Sidebar Navigation */}
+                    <aside className="w-64 bg-white border-r border-gray-200 hidden lg:flex flex-col fixed h-full z-10">
+                        <div className="p-6 border-b border-gray-100">
+                            <h1 className="text-2xl font-black text-gray-900 tracking-tighter flex items-center gap-2">
+                                <span className="text-blue-600 text-3xl">Invest</span>Pro
+                            </h1>
+                            <p className="text-xs text-gray-500 mt-1 font-medium">Strategy Outlook 2026</p>
+                        </div>
+                        
+                        <nav className="flex-1 p-4 space-y-1">
+                            <button 
+                                onClick={() => setView("overview")}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${view === "overview" ? "bg-blue-50 text-blue-700" : "text-gray-600 hover:bg-gray-50"}`}
+                            >
+                                <PieChart size={18} /> Tổng quan Chiến lược
+                            </button>
+                            <button 
+                                onClick={() => setView("stocks")}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${view === "stocks" ? "bg-blue-50 text-blue-700" : "text-gray-600 hover:bg-gray-50"}`}
+                            >
+                                <BarChart2 size={18} /> Phân tích Cổ phiếu
+                            </button>
+                             <button 
+                                onClick={() => setView("sectors")}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${view === "sectors" ? "bg-blue-50 text-blue-700" : "text-gray-600 hover:bg-gray-50"}`}
+                            >
+                                <Layers size={18} /> Phân tích Ngành
+                            </button>
+                            <button 
+                                onClick={() => setView("custom")}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${view === "custom" ? "bg-blue-50 text-blue-700" : "text-gray-600 hover:bg-gray-50"}`}
+                            >
+                                <Edit3 size={18} /> Khuyến nghị Cá nhân
+                            </button>
+                        </nav>
+
+                        <div className="p-4 bg-gray-50 border-t border-gray-200">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                                    AI
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-gray-900">AI Analyst</p>
+                                    <p className="text-xs text-green-600">Online</p>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="flex-1 lg:ml-64 p-8">
+                        <div className="lg:hidden flex justify-between items-center mb-6">
+                            <h1 className="text-xl font-bold text-gray-900">InvestPro 2026</h1>
+                            <button className="p-2 bg-white rounded-lg border shadow-sm"><Menu /></button>
+                        </div>
+
+                        {view === "overview" && (
+                            <div className="space-y-8 animate-fade-in">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Tổng hợp Chiến lược CTCK</h2>
+                                    <p className="text-gray-500">So sánh quan điểm từ các công ty chứng khoán hàng đầu.</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {Object.entries(STRATEGY_DATA).map(([key, data]) => (
+                                        <StrategyCard 
+                                            key={key} 
+                                            brokerKey={key} 
+                                            data={data} 
+                                            onOpen={(content, brokerName) => setStrategyModalData({ title: content?.title || "Chi tiết", content: content?.content || "Đang cập nhật...", brokerName })} 
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === "stocks" && (
+                             <StockAnalysisView onSelectStock={setSelectedStock} />
+                        )}
+
+                         {view === "sectors" && (
+                             <SectorAnalysisView />
+                        )}
+
+                        {view === "custom" && (
+                            <CustomRecommendationsView 
+                                recs={personalRecs}
+                                onAdd={addPersonalRec}
+                                onDelete={deletePersonalRec}
+                                onUpdate={updateRecPrice}
+                            />
+                        )}
+                    </main>
+
+                    {/* Modals */}
+                    <DetailModal 
+                        isOpen={!!strategyModalData} 
+                        onClose={() => setStrategyModalData(null)} 
+                        data={strategyModalData}
+                    />
+                    
+                    <StockDetailModal 
+                        isOpen={!!selectedStock}
+                        onClose={() => setSelectedStock(null)}
+                        stock={selectedStock}
+                    />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
